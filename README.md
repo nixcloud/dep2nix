@@ -9,6 +9,7 @@ In other words: For go projects using `golang dep` already, it is fairly trivial
 ## Installation
 
     git clone https://github.com/nixcloud/dep2nix
+    cd dep2nix
     nix-env -f default.nix -i dep2nix
     nix-env -i nix-prefetch-git    (this step might not be needed anymore soon)
 
@@ -29,6 +30,28 @@ Note: It is good practice to keep the `Gopkg.lock`, `Gopkg.toml` as well as the 
     dep2nix
     
 # Issues
+
+## Building the source
+
+On one test machine dep2nix wouldn't build with the error that lockfile had a 'wrong' sha256:
+
+    {
+      goPackagePath  = "github.com/nightlyone/lockfile";
+      fetch = {
+        type = "git";
+        url = "https://github.com/nightlyone/lockfile";
+        rev =  "6a197d5ea61168f2ac821de2b7f011b250904900";
+        sha256 = "0z3bdl5hb7nq2pqx7zy0r47bcdvjw0y11jjphv7k0s09ahlnac29";
+      };
+    }
+
+But running `nix-prefetch-git --url https://github.com/nightlyone/lockfile --rev 6a197d5ea61168f2ac821de2b7f011b250904900` showed it was actually correct.
+
+After running `nix-build` it showed the `/nix/store/krjm0nanydmyyddx222vn443hq13fsis-dep2nix.drv` target and then this call:
+
+    nix-store --delete /nix/store/krjm0nanydmyyddx222vn443hq13fsis-dep2nix.drv
+    
+Resets the complete build artifacts and afterwards it was working. No clue what is going on there...
 
 ## nix-prefetch-git 
 
