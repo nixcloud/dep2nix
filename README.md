@@ -16,7 +16,28 @@ In other words: For go projects using `golang dep` already, it is fairly trivial
 ## Using dep2nix
 
     cd yourproject   (contains the Gopkg.lock)
+    
     dep2nix
+    Found 14 libraries to process: 
+    github.com/Masterminds/semver github.com/Masterminds/vcs github.com/armon/go-radix github.com/boltdb/bolt github.com/golang/dep github.com/golang/protobuf github.com/jmank88/nuts github.com/nightlyone/lockfile github.com/pelletier/go-toml github.com/pkg/errors github.com/sdboyer/constext golang.org/x/net golang.org/x/sync golang.org/x/sys 
+
+    * Processing: "github.com/Masterminds/semver"
+    * Processing: "github.com/Masterminds/vcs"
+    * Processing: "github.com/armon/go-radix"
+    * Processing: "github.com/boltdb/bolt"
+    * Processing: "github.com/golang/dep"
+    * Processing: "github.com/golang/protobuf"
+    * Processing: "github.com/jmank88/nuts"
+    * Processing: "github.com/nightlyone/lockfile"
+    * Processing: "github.com/pelletier/go-toml"
+    * Processing: "github.com/pkg/errors"
+    * Processing: "github.com/sdboyer/constext"
+    * Processing: "golang.org/x/net"
+    * Processing: "golang.org/x/sync"
+    * Processing: "golang.org/x/sys"
+
+    -> Wrote deps.nix, everything fine!
+
     
 `dep2nix` has created a `deps.nix` file similar to the one coming with the dep2nix tool itself. If you wonder how to compile your GO based project with nixpkgs just look into the source code of this project itself at https://github.com/nixcloud/dep2nix
 
