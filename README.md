@@ -1,8 +1,8 @@
 # dep2nix
 
-`dep2nix` converts a `Gopkgs.lock` file into a `deps.nix` file which is understood by nixpkgs's go abstraction thanks to `go2nix` effort.
+`dep2nix` converts a `Gopkgs.lock` file into a `deps.nix` file which is understood by nixpkgs's go abstraction thanks to [go2nix](https://github.com/kamilchm/go2nix) effort.
 
-In other words: For go projects using `golang dep` already, it is fairly trivial to get these projects to compile with Nix/NixOS.
+In other words: For go projects using [golang dep](https://github.com/golang/dep) already, it is fairly trivial to get these projects to compile with Nix/NixOS.
 
 # Usage
 
