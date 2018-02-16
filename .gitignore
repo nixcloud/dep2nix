@@ -1,0 +1,5 @@
+.nix-prefetch-git-wrapped
+result-bin
+nix-prefetch-git
+vendor
+dep2nix
