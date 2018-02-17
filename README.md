@@ -103,6 +103,7 @@ returns bogus for not existent git repos as golang.org/x/net for example, this n
     
     this would require:
     
+      * https://lethalman.blogspot.de/2014/08/nix-pill-9-automatic-runtime.html (NAR discussion)
       * https://github.com/NixOS/nixpkgs/blob/master/pkgs/build-support/fetchgit/nix-prefetch-git
       * https://stackoverflow.com/questions/1713214/how-to-use-c-in-go
       * https://github.com/NixOS/nix/blob/master/src/libutil/hash.cc
