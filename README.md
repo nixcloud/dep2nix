@@ -39,7 +39,7 @@ In other words: For go projects using [golang dep](https://github.com/golang/dep
     -> Wrote deps.nix, everything fine!
 
     
-`dep2nix` has created a `deps.nix` file similar to the one coming with the dep2nix tool itself. If you wonder how to compile your GO based project with nixpkgs just look into the source code of this project itself at https://github.com/nixcloud/dep2nix
+`dep2nix` has created a `deps.nix` file similar to the one originally created by `go2nix` tool. If you wonder how to compile your GO based project with nixpkgs just look into the source code of this project itself at https://github.com/nixcloud/dep2nix
 
 Note: It is good practice to keep the `Gopkg.lock`, `Gopkg.toml` as well as the `deps.nix` in the GIT repository of your project. 
     
