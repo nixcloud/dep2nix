@@ -8,12 +8,14 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"github.com/pelletier/go-toml"
 	"io"
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -24,9 +26,23 @@ var (
 	buffer *bytes.Buffer
 )
 
+var (
+	inputFileFlag  = flag.String("i", "Gopkg.lock", "input lock file")
+	outputFileFlag = flag.String("o", "deps.nix", "output nix file")
+)
+
 func main() {
-	inFile := "Gopkg.lock"
-	outFile := "deps.nix"
+	flag.Parse()
+
+	inFile, err := filepath.Abs(*inputFileFlag)
+	if err != nil {
+		log.Fatalln("Invalid input file path:", err.Error())
+	}
+
+	outFile, err := filepath.Abs(*outputFileFlag)
+	if err != nil {
+		log.Fatalln("Invalid output file path:", err.Error())
+	}
 
 	data, err = os.Open(inFile)
 	if err != nil {
