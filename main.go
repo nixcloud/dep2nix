@@ -20,7 +20,6 @@ import (
 var (
 	data   *os.File
 	part   []byte
-	err    error
 	count  int
 	buffer *bytes.Buffer
 )
@@ -31,7 +30,7 @@ func main() {
 
 	data, err = os.Open(inFile)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln("Error opening input file:", err.Error())
 	}
 	defer data.Close()
 
@@ -46,15 +45,13 @@ func main() {
 		buffer.Write(part[:count])
 	}
 	if err != io.EOF {
-		log.Fatal("Error Reading ", inFile, ": ", err)
-	} else {
-		err = nil
+		log.Fatalln("Error reading input file:", err.Error())
 	}
 
 	raw := rawLock{}
 	err = toml.Unmarshal(buffer.Bytes(), &raw)
 	if err != nil {
-		//return nil, errors.Wrap(err, "Unable to parse the lock as TOML")
+		log.Fatalln("Error parsing lock file:", err.Error())
 	}
 	//fmt.Println(raw.Projects)
 
@@ -62,9 +59,9 @@ func main() {
 
 	for i := 0; i < len(raw.Projects); i++ {
 		t := raw.Projects[i]
-		fmt.Printf(t.Name + " ")
+		fmt.Println(t.Name)
 	}
-	fmt.Printf("\n\n")
+	fmt.Print("\n\n")
 
 	var godepnix string
 
