@@ -5,13 +5,13 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
-	"io"
-	"log"
-	"bufio"
 	"fmt"
 	"github.com/pelletier/go-toml"
+	"io"
+	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -26,8 +26,7 @@ var (
 )
 
 func main() {
-  
-  inFile := "Gopkg.lock"
+	inFile := "Gopkg.lock"
 	outFile := "deps.nix"
 
 	data, err = os.Open(inFile)
@@ -60,13 +59,13 @@ func main() {
 	//fmt.Println(raw.Projects)
 
 	fmt.Printf("Found %d libraries to process: \n", len(raw.Projects))
-	
+
 	for i := 0; i < len(raw.Projects); i++ {
-	  t := raw.Projects[i]
-	  fmt.Printf(t.Name + " ")
-  }
-  fmt.Printf("\n\n")
-	
+		t := raw.Projects[i]
+		fmt.Printf(t.Name + " ")
+	}
+	fmt.Printf("\n\n")
+
 	var godepnix string
 
 	godepnix += `
@@ -78,7 +77,7 @@ func main() {
 
 		t := raw.Projects[i]
 
-    // special case: exception for golang.org/x based dependencies
+		// special case: exception for golang.org/x based dependencies
 		url := "https://" + strings.Replace(t.Name, "golang.org/x/", "go.googlesource.com/", 1)
 
 		fmt.Println(" * Processing: \"" + t.Name + "\"")
@@ -99,16 +98,16 @@ func main() {
 			FetchSubmodules bool   `json:"fetchSubmodules"`
 		}
 
-		var jsonStr = out.String();
+		var jsonStr = out.String()
 		var res response
 		err1 := json.Unmarshal([]byte(jsonStr), &res)
-    
-    if err != nil {
-      fmt.Println("There was a problem in decoding the result from nix-prefetch-git returned JSON:")
-      fmt.Println(jsonStr)
-		  fmt.Println(err1)
-      os.Exit(1)
-	  }
+
+		if err != nil {
+			fmt.Println("There was a problem in decoding the result from nix-prefetch-git returned JSON:")
+			fmt.Println(jsonStr)
+			fmt.Println(err1)
+			os.Exit(1)
+		}
 
 		//fmt.Println(res)
 
@@ -127,12 +126,12 @@ func main() {
 
 	godepnix += "\n]"
 	//fmt.Println(godepnix)
-  
+
 	f, _ := os.Create(outFile)
 	defer f.Close()
 
 	_, _ = f.WriteString(godepnix)
 	fmt.Printf("\n -> Wrote %s, everything fine!\n", outFile)
-  
-  os.Exit(0)
+
+	os.Exit(0)
 }
