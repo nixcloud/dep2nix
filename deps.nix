@@ -78,7 +78,7 @@
         type = "git";
         url = "https://github.com/nightlyone/lockfile";
         rev =  "6a197d5ea61168f2ac821de2b7f011b250904900";
-        sha256 = "0z3bdl5hb7nq2pqx7zy0r47bcdvjw0y11jjphv7k0s09ahlnac29";
+        sha256 = "03znnf6rzyyi4h4qj81py1xpfs3pnfm39j4bfc9qzakz5j9y1gdl";
       };
     }
     
