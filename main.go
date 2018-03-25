@@ -62,10 +62,19 @@ func FindRealPath(url string) (string, error) {
 			}
 
 			// Extract vcs url
-			for idx, a := range t.Attr {
-				// makes (bad?) assumption content key is after name key
-				if a.Key == "name" && a.Val == "go-import" && t.Attr[idx+1].Key == "content" {
-					content := strings.Fields(t.Attr[idx+1].Val)
+			for _, a := range t.Attr {
+				if a.Key == "name" && a.Val == "go-import" {
+					var content []string
+					for _, b := range t.Attr {
+						if b.Key == "content" {
+							content = strings.Fields(b.Val)
+						}
+					}
+
+					if len(content) < 3 {
+						return "", fmt.Errorf("could not find content attribute for meta tag")
+					}
+
 					// go help importpath
 					// content[0] : original import path
 					// content[1] : vcs type
