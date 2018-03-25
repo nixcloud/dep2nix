@@ -13,10 +13,13 @@ import (
 	"github.com/pelletier/go-toml"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"golang.org/x/net/html"
 )
 
 var (
@@ -30,6 +33,90 @@ var (
 	inputFileFlag  = flag.String("i", "Gopkg.lock", "input lock file")
 	outputFileFlag = flag.String("o", "deps.nix", "output nix file")
 )
+
+// FindRealPath queries url to try to locate real vcs path
+// The meta tag has the form:
+//         <meta name="go-import" content="import-prefix vcs repo-root">
+//
+// For example,
+//         import "example.org/pkg/foo"
+//
+// will result in the following requests:
+//         https://example.org/pkg/foo?go-get=1 (preferred)
+//         http://example.org/pkg/foo?go-get=1  (fallback, only with -insecure)
+func FindRealPath(url string) (string, error) {
+	// golang http client will follow redirects, so if http don't work should query https if 301 redirect
+	resp, err := http.Get("http://" + url + "?go-get=1")
+	if err != nil {
+		return "", fmt.Errorf("Failed to query %v", url)
+	}
+	defer resp.Body.Close()
+
+	z := html.NewTokenizer(resp.Body)
+	for {
+		tt := z.Next()
+
+		switch {
+		case tt == html.ErrorToken:
+			// End of the document, we're done
+			return "", fmt.Errorf("end of body")
+		case tt == html.StartTagToken:
+			t := z.Token()
+
+			// Check if the token is an <meta> tag
+			isMeta := t.Data == "meta"
+			if !isMeta {
+				continue
+			}
+
+			// Extract vcs url
+			for _, a := range t.Attr {
+				if a.Key == "name" && a.Val == "go-import" {
+					var content []string
+					for _, b := range t.Attr {
+						if b.Key == "content" {
+							content = strings.Fields(b.Val)
+						}
+					}
+
+					if len(content) < 3 {
+						return "", fmt.Errorf("could not find content attribute for meta tag")
+					}
+
+					// go help importpath
+					// content[0] : original import path
+					// content[1] : vcs type
+					// content[2] : vcs url
+
+					// expand for non git vcs
+					if content[1] == "git" {
+						return content[2], nil
+					}
+					return "", fmt.Errorf("could not find git url")
+				}
+			}
+		}
+	}
+
+}
+
+// IsCommonPath checks to see if it's one of the common vcs locations go get supports
+// see `go help importpath`
+func IsCommonPath(url string) bool {
+	// from `go help importpath`
+	commonPaths := [...]string{
+		"bitbucket.org",
+		"github.com",
+		"launchpad.net",
+		"hub.jazz.net",
+	}
+	for _, path := range commonPaths {
+		if strings.Split(url, "/")[0] == path {
+			return true
+		}
+	}
+	return false
+}
 
 func main() {
 	flag.Parse()
@@ -90,8 +177,19 @@ func main() {
 
 		t := raw.Projects[i]
 
-		// special case: exception for golang.org/x based dependencies
-		url := "https://" + strings.Replace(t.Name, "golang.org/x/", "go.googlesource.com/", 1)
+		var url string
+		// check if it's a common git path `go get` supports and if not find real path
+		if !IsCommonPath(t.Name) {
+			realURL, err := FindRealPath(t.Name)
+
+			if err != nil {
+				//fmt.Printf("could not find real git url for import path %v: %+v\n", t.Name, err)
+				log.Fatal(err)
+			}
+			url = realURL
+		} else {
+			url = "https://" + t.Name
+		}
 
 		fmt.Println(" * Processing: \"" + t.Name + "\"")
 
