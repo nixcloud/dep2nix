@@ -96,7 +96,6 @@ func FindRealPath(url string) (string, error) {
 func IsCommonPath(url string) bool {
 	// from `go help importpath`
 	commonPaths := [...]string{
-		"golang.org",
 		"bitbucket.org",
 		"github.com",
 		"launchpad.net",
@@ -182,9 +181,9 @@ func main() {
 		}
 
 		// special case: exception for golang.org/x based dependencies
-		if strings.Contains(t.Name, "golang.org/x/") {
-			url = "https://" + strings.Replace(t.Name, "golang.org/x/", "go.googlesource.com/", 1)
-		}
+		// if strings.Contains(t.Name, "golang.org/x/") {
+		// 	url = "https://" + strings.Replace(t.Name, "golang.org/x/", "go.googlesource.com/", 1)
+		// }
 
 		if url == "" {
 			url = "https://" + t.Name
