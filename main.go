@@ -35,60 +35,15 @@ var (
 )
 
 // FindRealPath queries url to try to locate real vcs path
-// from `go help importpath`
-// ...
-// A few common code hosting sites have special syntax:
-//
-//         Bitbucket (Git, Mercurial)
-//
-//                 import "bitbucket.org/user/project"
-//                 import "bitbucket.org/user/project/sub/directory"
-//
-//         GitHub (Git)
-//
-//                 import "github.com/user/project"
-//                 import "github.com/user/project/sub/directory"
-//
-//         Launchpad (Bazaar)
-//
-//                 import "launchpad.net/project"
-//                 import "launchpad.net/project/series"
-//                 import "launchpad.net/project/series/sub/directory"
-//
-//                 import "launchpad.net/~user/project/branch"
-//                 import "launchpad.net/~user/project/branch/sub/directory"
-//
-//         IBM DevOps Services (Git)
-//
-//                 import "hub.jazz.net/git/user/project"
-//                 import "hub.jazz.net/git/user/project/sub/directory"
-//
-// ...
-// If the import path is not a known code hosting site and also lacks a
-// version control qualifier, the go tool attempts to fetch the import
-// over https/http and looks for a <meta> tag in the document's HTML
-// <head>.
-//
 // The meta tag has the form:
-//
 //         <meta name="go-import" content="import-prefix vcs repo-root">
-// ...
-// The repo-root is the root of the version control system
-// containing a scheme and not containing a .vcs qualifier.
 //
 // For example,
-//
 //         import "example.org/pkg/foo"
 //
 // will result in the following requests:
-//
 //         https://example.org/pkg/foo?go-get=1 (preferred)
 //         http://example.org/pkg/foo?go-get=1  (fallback, only with -insecure)
-//
-// If that page contains the meta tag
-//
-//         <meta name="go-import" content="example.org git https://code.org/r/p/exproj">b
-//
 func FindRealPath(url string) (string, error) {
 	// golang http client will follow redirects, so if http don't work should query https if 301 redirect
 	resp, err := http.Get("http://" + url + "?go-get=1")
