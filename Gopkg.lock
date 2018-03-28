@@ -27,16 +27,18 @@
   version = "v1.3.1"
 
 [[projects]]
+  branch = "master"
   name = "github.com/golang/dep"
   packages = [
+    ".",
     "gps",
     "gps/internal/pb",
     "gps/paths",
     "gps/pkgtree",
     "internal/fs"
   ]
-  revision = "37d9ea0ac16f0e0a05afc3b60e1ac8c364b6c329"
-  version = "v0.4.1"
+  revision = "fa9f32339c8855ebe7e7bc66e549036a7e06d37a"
+  source = "https://github.com/CrushedPixel/dep"
 
 [[projects]]
   branch = "master"
@@ -77,11 +79,7 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
-  packages = [
-    "context",
-    "html",
-    "html/atom"
-  ]
+  packages = ["context"]
   revision = "dc948dff8834a7fe1ca525f8d04e261c2b56e70d"
 
 [[projects]]
@@ -99,6 +97,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "a317572c6678a0a7322ac0c531cf3f8bc12c055c48d24411227b930158a2f8bc"
+  inputs-digest = "5ba2894346289bbb0f893f7893e38248bd7621f1a558d4927a46063b1ad3a9d2"
   solver-name = "gps-cdcl"
   solver-version = 1

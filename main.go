@@ -5,28 +5,18 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/pelletier/go-toml"
-	"io"
+	"github.com/golang/dep"
+	"github.com/golang/dep/gps"
+	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
-
-	"golang.org/x/net/html"
-)
-
-var (
-	data   *os.File
-	part   []byte
-	count  int
-	buffer *bytes.Buffer
+	"time"
 )
 
 var (
@@ -34,215 +24,121 @@ var (
 	outputFileFlag = flag.String("o", "deps.nix", "output nix file")
 )
 
-// FindRealPath queries url to try to locate real vcs path
-// The meta tag has the form:
-//         <meta name="go-import" content="import-prefix vcs repo-root">
-//
-// For example,
-//         import "example.org/pkg/foo"
-//
-// will result in the following requests:
-//         https://example.org/pkg/foo?go-get=1 (preferred)
-//         http://example.org/pkg/foo?go-get=1  (fallback, only with -insecure)
-func FindRealPath(url string) (string, error) {
-	// golang http client will follow redirects, so if http don't work should query https if 301 redirect
-	resp, err := http.Get("http://" + url + "?go-get=1")
-	if err != nil {
-		return "", fmt.Errorf("Failed to query %v", url)
-	}
-	defer resp.Body.Close()
-
-	z := html.NewTokenizer(resp.Body)
-	for {
-		tt := z.Next()
-
-		switch {
-		case tt == html.ErrorToken:
-			// End of the document, we're done
-			return "", fmt.Errorf("end of body")
-		case tt == html.StartTagToken:
-			t := z.Token()
-
-			// Check if the token is an <meta> tag
-			isMeta := t.Data == "meta"
-			if !isMeta {
-				continue
-			}
-
-			// Extract vcs url
-			for _, a := range t.Attr {
-				if a.Key == "name" && a.Val == "go-import" {
-					var content []string
-					for _, b := range t.Attr {
-						if b.Key == "content" {
-							content = strings.Fields(b.Val)
-						}
-					}
-
-					if len(content) < 3 {
-						return "", fmt.Errorf("could not find content attribute for meta tag")
-					}
-
-					// go help importpath
-					// content[0] : original import path
-					// content[1] : vcs type
-					// content[2] : vcs url
-
-					// expand for non git vcs
-					if content[1] == "git" {
-						return content[2], nil
-					}
-					return "", fmt.Errorf("could not find git url")
-				}
-			}
-		}
-	}
-
-}
-
-// IsCommonPath checks to see if it's one of the common vcs locations go get supports
-// see `go help importpath`
-func IsCommonPath(url string) bool {
-	// from `go help importpath`
-	commonPaths := [...]string{
-		"bitbucket.org",
-		"github.com",
-		"launchpad.net",
-		"hub.jazz.net",
-	}
-	for _, path := range commonPaths {
-		if strings.Split(url, "/")[0] == path {
-			return true
-		}
-	}
-	return false
-}
-
 func main() {
 	flag.Parse()
+	logger := log.New(os.Stdout, "", 0)
 
+	defer func(start time.Time) {
+		logger.Printf("Finished execution in %s.\n", time.Since(start).Round(time.Second).String())
+	}(time.Now())
+
+	// parse input file path
 	inFile, err := filepath.Abs(*inputFileFlag)
 	if err != nil {
-		log.Fatalln("Invalid input file path:", err.Error())
+		logger.Fatalln("Invalid input file path:", err.Error())
 	}
 
+	// parse output file path
 	outFile, err := filepath.Abs(*outputFileFlag)
 	if err != nil {
-		log.Fatalln("Invalid output file path:", err.Error())
+		logger.Fatalln("Invalid output file path:", err.Error())
 	}
 
-	data, err = os.Open(inFile)
+	// parse lock file
+	f, err := os.Open(inFile)
 	if err != nil {
-		log.Fatalln("Error opening input file:", err.Error())
+		logger.Fatalln("Error opening input file:", err.Error())
 	}
-	defer data.Close()
-
-	reader := bufio.NewReader(data)
-	buffer = bytes.NewBuffer(make([]byte, 0))
-	part = make([]byte, 1024)
-
-	for {
-		if count, err = reader.Read(part); err != nil {
-			break
-		}
-		buffer.Write(part[:count])
-	}
-	if err != io.EOF {
-		log.Fatalln("Error reading input file:", err.Error())
-	}
-
-	raw := rawLock{}
-	err = toml.Unmarshal(buffer.Bytes(), &raw)
-	if err != nil {
-		log.Fatalln("Error parsing lock file:", err.Error())
-	}
-	//fmt.Println(raw.Projects)
-
-	fmt.Printf("Found %d libraries to process: \n", len(raw.Projects))
-
-	for i := 0; i < len(raw.Projects); i++ {
-		t := raw.Projects[i]
-		fmt.Println(t.Name)
-	}
-	fmt.Print("\n\n")
-
-	var godepnix string
-
-	godepnix += `
-  # file automatically generated from Gopkg.lock with https://github.com/nixcloud/dep2nix (golang dep)
-  [
-  `
-
-	for i := 0; i < len(raw.Projects); i++ {
-
-		t := raw.Projects[i]
-
-		var url string
-		// check if it's a common git path `go get` supports and if not find real path
-		if !IsCommonPath(t.Name) {
-			realURL, err := FindRealPath(t.Name)
-
-			if err != nil {
-				//fmt.Printf("could not find real git url for import path %v: %+v\n", t.Name, err)
-				log.Fatal(err)
-			}
-			url = realURL
-		} else {
-			url = "https://" + t.Name
-		}
-
-		fmt.Println(" * Processing: \"" + t.Name + "\"")
-
-		cmd := exec.Command("nix-prefetch-git", url, "--rev", t.Revision, "--quiet")
-		var out bytes.Buffer
-		cmd.Stdout = &out
-		err := cmd.Run()
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		type response struct {
-			Url             string `json:"url"`
-			Rev             string `json:"rev"`
-			Date            string `json:"date"`
-			SHA256          string `json:"sha256"`
-			FetchSubmodules bool   `json:"fetchSubmodules"`
-		}
-
-		var jsonStr = out.String()
-		var res response
-		err1 := json.Unmarshal([]byte(jsonStr), &res)
-
-		if err != nil {
-			fmt.Println("There was a problem in decoding the result from nix-prefetch-git returned JSON:")
-			fmt.Println(jsonStr)
-			fmt.Println(err1)
-			os.Exit(1)
-		}
-
-		//fmt.Println(res)
-
-		godepnix += `
-    {
-      goPackagePath  = "` + t.Name + `";
-      fetch = {
-        type = "git";
-        url = "` + url + `";
-        rev =  "` + res.Rev + `";
-        sha256 = "` + res.SHA256 + `";
-      };
-    }
-    `
-	}
-
-	godepnix += "\n]"
-	//fmt.Println(godepnix)
-
-	f, _ := os.Create(outFile)
 	defer f.Close()
 
-	_, _ = f.WriteString(godepnix)
-	fmt.Printf("\n -> Wrote %s, everything fine!\n", outFile)
+	lock, err := dep.ReadLock(f)
+	if err != nil {
+		logger.Fatalln("Error parsing lock file:", err.Error())
+	}
 
-	os.Exit(0)
+	logger.Printf("Found %d projects to process.\n", len(lock.Projects()))
+
+	// create temporary directory for source manager cache
+	cachedir, err := ioutil.TempDir(os.TempDir(), "")
+	if err != nil {
+		logger.Fatalln(err)
+	}
+	defer os.RemoveAll(cachedir)
+
+	// create source manager
+	sm, err := gps.NewSourceManager(gps.SourceManagerConfig{
+		Cachedir: cachedir,
+		Logger:   logger,
+	})
+	if err != nil {
+		logger.Fatalln(err)
+	}
+
+	// Process all projects, converting them into deps
+	var deps Deps
+	for _, project := range lock.Projects() {
+		fmt.Printf("* Processing: \"%s\"\n", project.Ident().ProjectRoot)
+
+		// get repository for project
+		src, err := sm.SourceFor(project.Ident())
+		if err != nil {
+			logger.Fatalln(err)
+		}
+		repo := src.Repo()
+
+		// get vcs type
+		typ := string(repo.Vcs())
+		if typ != "git" {
+			logger.Fatalln("non-git repositories are not supported yet")
+		}
+
+		// check out repository
+		if err := repo.Get(); err != nil {
+			logger.Fatalln("error fetching project:", err.Error())
+		}
+
+		// get resolved revision
+		rev, err := src.Repo().Version()
+		if err != nil {
+			logger.Fatal(err)
+		}
+
+		// use locally fetched repository as remote for nix-prefetch-git
+		// to it being downloaded from the remote again
+		localUrl := fmt.Sprintf("file://%s", repo.LocalPath())
+		// use nix-prefetch-git to get the hash of the checkout
+		cmd := exec.Command("nix-prefetch-git", "--url", localUrl, "--rev", rev, "--quiet")
+		var out bytes.Buffer
+		cmd.Stdout = &out
+		if err := cmd.Run(); err != nil {
+			logger.Fatal(err)
+		}
+		// extract hash from response
+		res := &struct {
+			SHA256 string `json:"sha256"`
+		}{}
+		json.Unmarshal(out.Bytes(), res)
+
+		// create dep instance
+		deps = append(deps, &Dep{
+			PackagePath: string(project.Ident().ProjectRoot),
+			VCS:         string(typ),
+			URL:         src.Repo().Remote(),
+			Revision:    rev,
+			SHA256:      res.SHA256,
+		})
+	}
+
+	// write deps to output file
+	out, err := os.Create(outFile)
+	if err != nil {
+		logger.Fatalln("Error creating output file:", err.Error())
+	}
+	defer out.Close()
+
+	if _, err := out.WriteString(deps.toNix()); err != nil {
+		logger.Fatalln("Error writing output file:", err.Error())
+	}
+
+	fmt.Printf("\n -> Wrote to %s.\n", outFile)
 }

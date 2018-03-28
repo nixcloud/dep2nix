@@ -46,9 +46,9 @@
       goPackagePath  = "github.com/golang/dep";
       fetch = {
         type = "git";
-        url = "https://github.com/golang/dep";
-        rev =  "37d9ea0ac16f0e0a05afc3b60e1ac8c364b6c329";
-        sha256 = "0183xq5l4sinnclynv6xi85vmk69mqpy5wjfsgh8bxwziq3vkd7y";
+        url = "https://github.com/CrushedPixel/dep";
+        rev =  "fa9f32339c8855ebe7e7bc66e549036a7e06d37a";
+        sha256 = "1knaxs1ji1b0b68393f24r8qzvahxz9x7rqwc8jsjlshvpz0hlm6";
       };
     }
     

@@ -26,16 +26,9 @@
 
 
 [[constraint]]
+  branch = "master"
   name = "github.com/golang/dep"
-  version = "0.4.1"
-
-[[constraint]]
-  name = "github.com/pelletier/go-toml"
-  version = "1.1.0"
-
-[[constraint]]
-  name = "github.com/pkg/errors"
-  version = "0.8.0"
+  source = "https://github.com/CrushedPixel/dep"
 
 [prune]
   go-tests = true
