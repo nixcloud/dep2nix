@@ -131,11 +131,3 @@ See [LICENSE](LICENSE) file.
             pkgs/development/tools/kube-aws/default.nix:    go generate ./core/root/config
             pkgs/servers/monitoring/mtail/default.nix:  preBuild = "go generate -x ./go/src/github.com/google/mtail/vm/";
  
-- add Flags: 
- - check to not overwrite the deps.nix if already there
- - help
-
-- also write 'incomplete' deps.nix (with 1 exit code and warning) if dependencies using nix-prefetch-url fail
-- test with leaps
-
-- blog this
