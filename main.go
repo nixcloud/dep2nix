@@ -98,10 +98,7 @@ func main() {
 		}
 
 		// get resolved revision
-		rev, err := src.Repo().Version()
-		if err != nil {
-			logger.Fatal(err)
-		}
+		rev, _, _ := gps.VersionComponentStrings(project.Version())
 
 		// use locally fetched repository as remote for nix-prefetch-git
 		// to it being downloaded from the remote again
