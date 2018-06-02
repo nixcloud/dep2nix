@@ -3,7 +3,7 @@ with import <nixpkgs>{};
 buildGoPackage rec {
   name = "dep2nix";
 
-  goPackagePath = "github.com/nixcloud.io/dep2nix";
+  goPackagePath = "github.com/nixcloud/dep2nix";
 
   src = ./.;
 
