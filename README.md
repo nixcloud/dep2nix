@@ -11,16 +11,13 @@ In other words: For go projects using [golang dep](https://github.com/golang/dep
     git clone https://github.com/nixcloud/dep2nix
     cd dep2nix
     nix-env -f default.nix -i dep2nix
-    nix-env -i nix-prefetch-git    (this step might not be needed anymore soon)
 
 ## Using dep2nix
 
     cd yourproject   (contains the Gopkg.lock)
     
-    dep2nix
-    Found 14 libraries to process: 
-    github.com/Masterminds/semver github.com/Masterminds/vcs github.com/armon/go-radix github.com/boltdb/bolt github.com/golang/dep github.com/golang/protobuf github.com/jmank88/nuts github.com/nightlyone/lockfile github.com/pelletier/go-toml github.com/pkg/errors github.com/sdboyer/constext golang.org/x/net golang.org/x/sync golang.org/x/sys 
-
+    dep2nix [-i Gopkg.lock] [-o deps.nix]
+    Found 14 projects to process.
     * Processing: "github.com/Masterminds/semver"
     * Processing: "github.com/Masterminds/vcs"
     * Processing: "github.com/armon/go-radix"

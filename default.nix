@@ -8,7 +8,7 @@ buildGoPackage rec {
   src = ./.;
   
   buildInputs = [ makeWrapper ];
-  binPath = lib.makeBinPath [ nix-prefetch-git nix-prefetch-hg ];
+  binPath = lib.makeBinPath [ git nix-prefetch-git mercurial nix-prefetch-hg ];
 
   goDeps = ./deps.nix;
 
