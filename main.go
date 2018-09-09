@@ -5,16 +5,14 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/Masterminds/vcs"
 	"github.com/golang/dep"
 	"github.com/golang/dep/gps"
 	"io/ioutil"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"time"
 )
@@ -86,10 +84,15 @@ func main() {
 		}
 		repo := src.Repo()
 
-		// get vcs type
-		typ := string(repo.Vcs())
-		if typ != "git" {
-			logger.Fatalln("non-git repositories are not supported yet")
+		// convert vcs type to vcs.Type to avoid
+		// type mismatches caused by vendoring
+		typ := vcs.Type(repo.Vcs())
+
+		// get prefetcher for vcs type
+		prefetcher := PrefetcherFor(typ)
+		if prefetcher == nil {
+			logger.Fatalf("only repositories of type \"%s\" and \"%s\" are supported "+
+				"- detected repository type \"%s\"\n", vcs.Git, vcs.Hg, typ)
 		}
 
 		// check out repository
@@ -100,21 +103,15 @@ func main() {
 		// get resolved revision
 		rev, _, _ := gps.VersionComponentStrings(project.Version())
 
-		// use locally fetched repository as remote for nix-prefetch-git
-		// to it being downloaded from the remote again
+		// use locally fetched repository as remote for nix-prefetch
+		// to avoid it being downloaded from the remote again
 		localUrl := fmt.Sprintf("file://%s", repo.LocalPath())
-		// use nix-prefetch-git to get the hash of the checkout
-		cmd := exec.Command("nix-prefetch-git", "--url", localUrl, "--rev", rev, "--quiet")
-		var out bytes.Buffer
-		cmd.Stdout = &out
-		if err := cmd.Run(); err != nil {
-			logger.Fatal(err)
+
+		// use nix-prefetch to get the hash of the checkout
+		hash, err := prefetcher.fetchHash(localUrl, rev)
+		if err != nil {
+			logger.Fatalln("error prefetching hash:", err.Error())
 		}
-		// extract hash from response
-		res := &struct {
-			SHA256 string `json:"sha256"`
-		}{}
-		json.Unmarshal(out.Bytes(), res)
 
 		// create dep instance
 		deps = append(deps, &Dep{
@@ -122,7 +119,7 @@ func main() {
 			VCS:         string(typ),
 			URL:         src.Repo().Remote(),
 			Revision:    rev,
-			SHA256:      res.SHA256,
+			SHA256:      hash,
 		})
 	}
 
