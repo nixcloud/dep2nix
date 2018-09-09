@@ -108,23 +108,3 @@ returns bogus for not existent git repos as golang.org/x/net for example, this n
 # License
 
 See [LICENSE](LICENSE) file.
-
-# Todo(s) left
-
-- integrate into nixpkgs, add nix-prefetch-url as dependency for this tool
-
-    - https://blog.golang.org/generate
- 
-            joachim@lenovo-t530 ~/D/p/n/nixpkgs> git grep 'go generate'
-            pkgs/applications/networking/gopher/gopherclient/default.nix:    PATH="$(pwd):$PATH" go generate ${goPackagePath}
-            pkgs/applications/version-management/git-lfs/1.nix:      go generate ./commands
-            pkgs/applications/version-management/git-lfs/default.nix:    go generate ./commands
-            pkgs/development/interpreters/joker/default.nix:  preBuild = "go generate ./...";
-            pkgs/development/tools/continuous-integration/drone/default.nix:    go generate github.com/drone/drone/server/template
-            pkgs/development/tools/continuous-integration/drone/default.nix:    go generate github.com/drone/drone/store/datastore/ddl
-            pkgs/development/tools/go2nix/default.nix:  preBuild = ''go generate ./...'';
-            pkgs/development/tools/kube-aws/default.nix:    go generate ./core/controlplane/config
-            pkgs/development/tools/kube-aws/default.nix:    go generate ./core/nodepool/config
-            pkgs/development/tools/kube-aws/default.nix:    go generate ./core/root/config
-            pkgs/servers/monitoring/mtail/default.nix:  preBuild = "go generate -x ./go/src/github.com/google/mtail/vm/";
- 
