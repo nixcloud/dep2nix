@@ -19,6 +19,6 @@ buildGoPackage rec {
   meta = with stdenv.lib; {
     description = "Convert `Gopkg.lock` files from golang dep into `deps.nix`";
     license = licenses.bsd3;
-    homepage = https://github.com/nixcloud.io/dep2nix;
+    homepage = https://github.com/nixcloud/dep2nix;
   };
 }
