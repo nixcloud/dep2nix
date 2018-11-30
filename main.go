@@ -23,35 +23,41 @@ var (
 )
 
 func main() {
-	flag.Parse()
 	logger := log.New(os.Stdout, "", 0)
 
-	defer func(start time.Time) {
-		logger.Printf("Finished execution in %s.\n", time.Since(start).Round(time.Second).String())
-	}(time.Now())
+	startTime := time.Now()
+	if err := perform(logger); err != nil {
+		logger.Fatalln(err.Error())
+	}
+
+	logger.Printf("Finished execution in %s.\n", time.Since(startTime).Round(time.Second).String())
+}
+
+func perform(logger *log.Logger) error {
+	flag.Parse()
 
 	// parse input file path
 	inFile, err := filepath.Abs(*inputFileFlag)
 	if err != nil {
-		logger.Fatalln("Invalid input file path:", err.Error())
+		return fmt.Errorf("invalid input file path: %s", err.Error())
 	}
 
 	// parse output file path
 	outFile, err := filepath.Abs(*outputFileFlag)
 	if err != nil {
-		logger.Fatalln("Invalid output file path:", err.Error())
+		return fmt.Errorf("invalid output file path: %s", err.Error())
 	}
 
 	// parse lock file
 	f, err := os.Open(inFile)
 	if err != nil {
-		logger.Fatalln("Error opening input file:", err.Error())
+		return fmt.Errorf("could not open input file: %s", err.Error())
 	}
 	defer f.Close()
 
 	lock, err := dep.ReadLock(f)
 	if err != nil {
-		logger.Fatalln("Error parsing lock file:", err.Error())
+		return fmt.Errorf("could not parse lock file: %s", err.Error())
 	}
 
 	logger.Printf("Found %d projects to process.\n", len(lock.Projects()))
@@ -59,7 +65,7 @@ func main() {
 	// create temporary directory for source manager cache
 	cachedir, err := ioutil.TempDir(os.TempDir(), "")
 	if err != nil {
-		logger.Fatalln(err)
+		return fmt.Errorf("error creating cache directory: %s", err)
 	}
 	defer os.RemoveAll(cachedir)
 
@@ -69,18 +75,18 @@ func main() {
 		Logger:   logger,
 	})
 	if err != nil {
-		logger.Fatalln(err)
+		return fmt.Errorf("error creating source manager: %s", err)
 	}
 
 	// Process all projects, converting them into deps
 	var deps Deps
 	for _, project := range lock.Projects() {
-		fmt.Printf("* Processing: \"%s\"\n", project.Ident().ProjectRoot)
+		logger.Printf("* Processing: \"%s\"\n", project.Ident().ProjectRoot)
 
 		// get repository for project
 		src, err := sm.SourceFor(project.Ident())
 		if err != nil {
-			logger.Fatalln(err)
+			return fmt.Errorf("error deducing project source: %s", err.Error())
 		}
 		repo := src.Repo()
 
@@ -91,13 +97,13 @@ func main() {
 		// get prefetcher for vcs type
 		prefetcher := PrefetcherFor(typ)
 		if prefetcher == nil {
-			logger.Fatalf("only repositories of type \"%s\" and \"%s\" are supported "+
+			return fmt.Errorf("only repositories of type \"%s\" and \"%s\" are supported "+
 				"- detected repository type \"%s\"\n", vcs.Git, vcs.Hg, typ)
 		}
 
 		// check out repository
 		if err := repo.Get(); err != nil {
-			logger.Fatalln("error fetching project:", err.Error())
+			return fmt.Errorf("error fetching project: %s", err.Error())
 		}
 
 		// get resolved revision
@@ -110,7 +116,7 @@ func main() {
 		// use nix-prefetch to get the hash of the checkout
 		hash, err := prefetcher.fetchHash(localUrl, rev)
 		if err != nil {
-			logger.Fatalln("error prefetching hash:", err.Error())
+			return fmt.Errorf("error prefetching hash: %s", err.Error())
 		}
 
 		// create dep instance
@@ -127,7 +133,7 @@ func main() {
 		// and only takes up disk space.
 		files, err := ioutil.ReadDir(cachedir)
 		if err != nil {
-			logger.Fatalln("error reading cache dir:", err.Error())
+			return fmt.Errorf("error reading cache dir: %s", err.Error())
 		}
 
 		for _, f := range files {
@@ -138,13 +144,14 @@ func main() {
 	// write deps to output file
 	out, err := os.Create(outFile)
 	if err != nil {
-		logger.Fatalln("Error creating output file:", err.Error())
+		return fmt.Errorf("error creating output file: %s", err.Error())
 	}
 	defer out.Close()
 
 	if _, err := out.WriteString(deps.toNix()); err != nil {
-		logger.Fatalln("Error writing output file:", err.Error())
+		return fmt.Errorf("error writing output file: %s", err.Error())
 	}
 
-	fmt.Printf("\n -> Wrote to %s.\n", outFile)
+	logger.Printf("\n -> Wrote to %s.\n", outFile)
+	return nil
 }
