@@ -121,6 +121,18 @@ func main() {
 			Revision:    rev,
 			SHA256:      hash,
 		})
+
+		// clean the contents of the source manager cache directory,
+		// as the downloaded project is no longer needed
+		// and only takes up disk space.
+		files, err := ioutil.ReadDir(cachedir)
+		if err != nil {
+			logger.Fatalln("error reading cache dir:", err.Error())
+		}
+
+		for _, f := range files {
+			os.RemoveAll(f.Name())
+		}
 	}
 
 	// write deps to output file
