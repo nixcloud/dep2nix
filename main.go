@@ -109,6 +109,21 @@ func perform(logger *log.Logger) error {
 		// get resolved revision
 		rev, _, _ := gps.VersionComponentStrings(project.Version())
 
+		// We intend to use this fetched version of the repository
+		// with nix-prefetch-git. When cloning a repository in git,
+		// all remote branches become tracking branches in the
+		// clone. When cloning a checkout, the only remote branches
+		// are the local branches in the checkout, and in our case
+		// this is the default branch upstream. nix-prefetch-git will
+		// clone our checkout, and only see a single branch
+		// corresponding to HEAD. If `rev` is not an ancestor of the
+		// default upstream branch, nix-prefetch-git will not be able
+		// to find the revision. To fix this, we set the default
+		// revision of the first checkout to `rev`.
+		if err := repo.UpdateVersion(rev); err != nil {
+			return fmt.Errorf("error checking out branch: %s", err.Error())
+		}
+
 		// use locally fetched repository as remote for nix-prefetch
 		// to avoid it being downloaded from the remote again
 		localUrl := fmt.Sprintf("file://%s", repo.LocalPath())
