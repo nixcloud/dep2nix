@@ -102,8 +102,10 @@ func perform(logger *log.Logger) error {
 		}
 
 		// check out repository
-		if err := repo.Get(); err != nil {
-			return fmt.Errorf("error fetching project: %s", err.Error())
+		if !repo.CheckLocal() {
+			if err := repo.Get(); err != nil {
+				return fmt.Errorf("error fetching project: %s", err.Error())
+			}
 		}
 
 		// get resolved revision
