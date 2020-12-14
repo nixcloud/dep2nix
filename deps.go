@@ -36,7 +36,8 @@ func (d *Dep) toNix() string {
 const depsFileHeader = `# file generated from Gopkg.lock using dep2nix (https://github.com/nixcloud/dep2nix)
 [`
 const depsFileFooter = `
-]`
+]
+`
 
 type Deps []*Dep
 
