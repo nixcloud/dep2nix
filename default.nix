@@ -13,7 +13,7 @@ buildGoPackage rec {
   goDeps = ./deps.nix;
 
   postInstall = ''
-    wrapProgram $bin/bin/dep2nix --prefix PATH ':' ${binPath}
+    wrapProgram $out/bin/dep2nix --prefix PATH ':' ${binPath}
   '';
   
   meta = with stdenv.lib; {
